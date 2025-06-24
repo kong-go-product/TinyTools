@@ -3,6 +3,7 @@ import os
 import subprocess
 import uuid
 
+
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -39,4 +40,7 @@ def convert():
             os.remove(output_path)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+
+    port = int(os.environ.get("PORT", 5000))  # Render 会提供 PORT 环境变量
+    app.run(host="0.0.0.0", port=port, debug=True)
+    # app.run(debug=True, port=5000)
