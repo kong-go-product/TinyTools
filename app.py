@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, render_template
 import os
 import subprocess
 import uuid
@@ -9,7 +9,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route("/")
 def home():
-    return "🎵 MP4 to MP3 Converter is Running!"
+    return render_template("index.html")
 
 @app.route("/convert", methods=["POST"])
 def convert():
@@ -39,5 +39,4 @@ def convert():
             os.remove(output_path)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True, port=5000)
