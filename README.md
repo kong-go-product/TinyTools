@@ -13,4 +13,4 @@ A simple cloud-powered API to convert uploaded `.mp4` videos into `.mp3` audio f
 ## 🧪 Test API (with curl)
 
 ```bash
-curl -F "file=@yourfile.mp4" https://your-app.onrender.com/convert --output output.mp3
+curl -F "file=@yourfile.mp4" https://tinytools-3bj7.onrender.com/convert --output output.mp3
