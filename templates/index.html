@@ -20,6 +20,7 @@
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 400px;
         }
         h1 {
             color: #333;
@@ -40,16 +41,148 @@
         button:hover {
             background-color: #0056b3;
         }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007aff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            font-size: 14px;
+            color: #666;
+        }
+        .status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        .error {
+            color: #ff3b30;
+        }
+        .success {
+            color: #34c759;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>MP4 to MP3 Converter</h1>
-        <form action="/convert" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" accept=".mp4" required>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".mp4" required id="fileInput">
             <br>
-            <button type="submit">Convert</button>
+            <button type="submit" id="convertBtn">Convert</button>
         </form>
+        
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">0%</div>
+            <div class="status" id="status"></div>
+        </div>
     </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('fileInput');
+            const convertBtn = document.getElementById('convertBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const status = document.getElementById('status');
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            
+            if (!file.name.endsWith('.mp4')) {
+                alert('Please select an MP4 file');
+                return;
+            }
+            
+            // Show progress bar and disable button
+            progressContainer.style.display = 'block';
+            convertBtn.disabled = true;
+            status.textContent = 'Uploading file...';
+            status.className = 'status';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const xhr = new XMLHttpRequest();
+            
+            // Upload progress
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressFill.style.width = percentComplete + '%';
+                    progressText.textContent = Math.round(percentComplete) + '%';
+                }
+            });
+            
+            // Response handling
+            xhr.addEventListener('load', function() {
+                if (xhr.status === 200) {
+                    status.textContent = 'Conversion successful! Downloading...';
+                    status.className = 'status success';
+                    
+                    // Create download link
+                    const blob = new Blob([xhr.response], { type: 'audio/mpeg' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name.replace('.mp4', '.mp3');
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    // Reset form
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        convertBtn.disabled = false;
+                        fileInput.value = '';
+                        progressFill.style.width = '0%';
+                        progressText.textContent = '0%';
+                        status.textContent = '';
+                    }, 2000);
+                } else {
+                    status.textContent = 'Error: ' + xhr.responseText;
+                    status.className = 'status error';
+                    convertBtn.disabled = false;
+                }
+            });
+            
+            xhr.addEventListener('error', function() {
+                status.textContent = 'Upload failed. Please try again.';
+                status.className = 'status error';
+                convertBtn.disabled = false;
+            });
+            
+            xhr.open('POST', '/convert');
+            xhr.responseType = 'blob';
+            xhr.send(formData);
+        });
+    </script>
 </body>
 </html> 

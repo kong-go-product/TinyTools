@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, render_template
+from flask import Flask, request, send_file, render_template, after_this_request
 import os
 import subprocess
 import uuid
@@ -31,16 +31,27 @@ def convert():
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
-        return send_file(output_path, as_attachment=True)
+
+        @after_this_request
+        def cleanup(response):
+            try:
+                if os.path.exists(input_path):
+                    os.remove(input_path)
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+            except Exception as e:
+                app.logger.error(f"Cleanup failed: {e}")
+            return response
+
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name=uploaded_file.filename.replace('.mp4', '.mp3')
+        )
     except Exception as e:
         return {"error": f"Conversion failed: {str(e)}"}, 500
-    finally:
-        os.remove(input_path)
-        if os.path.exists(output_path):
-            os.remove(output_path)
 
 if __name__ == "__main__":
-
     port = int(os.environ.get("PORT", 5000))  # Render 会提供 PORT 环境变量
     app.run(host="0.0.0.0", port=port, debug=True)
     # app.run(debug=True, port=5000)
